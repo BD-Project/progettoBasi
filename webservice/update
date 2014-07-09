@@ -1,0 +1,5 @@
+#!/bin/bash
+
+sudo cp -r /home/proch/uni/db/progetto/webservice/* /var/www/html/
+sudo cp /home/proch/uni/db/progetto/relazione.tex /var/www/html/
+sudo cp /home/proch/uni/db/progetto/relazione.pdf /var/www/html/

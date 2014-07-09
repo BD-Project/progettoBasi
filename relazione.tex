@@ -1,0 +1,390 @@
+\documentclass[11pt,a4paper] {article}
+
+\usepackage{graphicx}
+\usepackage{tikz-er2}
+
+\title {\textbf{Dynamic DNS}}
+\author {Michele Proverbio\\
+		Alessandra La Rocca}
+\date {}
+
+\begin{document}
+
+\maketitle
+
+\newpage
+\tableofcontents
+
+\newpage
+\section{Introduzione}
+
+Il progetto descritto di seguito consiste nella progettazione ed implementazione di un servizio di Dynamic DNS. Il servizio, accessibile tramite web, offre ai clienti la possibilit\`a di comprare dei nomi DNS per un certo quantitativo di tempo e di associarli al loro indirizzo IP di casa o ufficio.
+Il sistema permette agli utenti di registrare un account e gestirlo tramite web; possono comprare nuovi hostname, cambiare gli ip associati e osservare statistiche relative ai loro acquisti.
+Viene inoltre reso disponibile agli amministratori e ai dipendenti dell'azienda un portale per la gestione dei dati interni: acquisti, riparazioni, visualizzazione statistiche per il marketing e quant'altro.
+
+Per implementare il servizio sono state utilizzate le seguenti tecnologie:
+\begin{itemize}
+\item Python e Jinja2 come tecnologia web server side
+\item MySQL come DBMS
+\item LaTeX per la creazione della documentazione
+\end{itemize}
+
+\newpage
+\section{Analisi dei requisiti}
+
+\subsection{Requisiti in linguaggio naturale}
+Il seguente testo riporta i requisiti del sistema informativo in linguaggio naturale. \\
+\\
+
+\framebox[12,5cm] {
+	\begin{minipage}{12,25cm}
+	\small
+	\`e richiesto un sistema informatico per la gestione di un servizio di dynamic dns. I potenziali clienti devono potersi iscrivere gratuitamente al servizio tramite web. Gli utenti possono comprare dei nuovi record scegliendo hostname e durata del servizio. Il metodo di pagamento \`e effettuato attraverso una moneta virtuale ricaricabile con carta di cedito. I clienti soddisfatti del servizio hanno la possibilità di passare ad un account di livello superiore. Ogni tipo di account offre dei benefici in cambio di un abbonamento mensile o annuale. Viene data ai clienti la possibilit\`a di esaminare alcune statistiche riguardanti gli ultimi acqusti e il traffico generato. Gli amministratori del servizio posso decidere di mettere a disposizione degli utenti delle promozioni temporanee per questioni di marketing e visibilit\`a. Viene inoltre richiesto di gestire la parte interna all'azienda. Devono essere salvati i dati relativi ai dipendenti e ai loro stipendi. Vengono anche gestite le server farm con i server che ne fanno parte, i suoi amministratori e i tecnici che li mantengono. Si vuole tener traccia delle prestazioni dei dipendenti, dei guasti e degli eventuali acquisti da fornitori esterni. Si vuole inoltre informatizzare il processo di assistenza ai clienti, salvando il motivo dei reclami e/o domande e l'eventuale risoluzione da parte dell'assistente.
+	\end{minipage}
+}
+
+\newpage
+\subsection{Identificazione delle ambiguit\`a}
+Verranno di seguito studiate ed eventualmente rimosse le possibili ambigut\`a derivate dall'uso di un linguaggio naturale non specifico.\\
+Gli elementi di ambiguità per il progettista che cercheremo possono essere omonimie, oppure l'uso di termini diversi per riferirsi allo stesso oggetto o l'uso impreciso di termini specifici.
+
+\framebox[12,5cm] {
+	\begin{minipage}{12,25cm}
+	\small
+	\`e richiesto un sistema informatico per la gestione di un servizio di dynamic dns. I \textbf{potenziali clienti}\textsuperscript{\tiny 1} devono potersi iscrivere gratuitamente al servizio tramite web. Gli \textbf{utenti}\textsuperscript{\tiny 2} possono comprare dei nuovi record scegliendo hostname e \textbf{durata del servizio}\textsuperscript{\tiny 3}. Il metodo di pagamento \`e effettuato attraverso una moneta virtuale ricaricabile con carta di cedito. I \textbf{clienti soddisfatti del servizio}\textsuperscript{\tiny 4} hanno la possibilità di passare ad un account di livello superiore. Ogni tipo di account offre dei benefici in cambio di un abbonamento mensile o annuale. Viene data ai \textbf{clienti}\textsuperscript{\tiny 5} la possibilit\`a di esaminare alcune statistiche riguardanti gli ultimi acqusti e il \textbf{traffico generato}\textsuperscript{\tiny 6}. Gli amministratori del servizio possono decidere di mettere a disposizione degli utenti delle promozioni temporanee per questioni di marketing e visibilità. Viene inoltre richiesto di gestire la parte interna all'azienda. Devono essere salvati i dati relativi ai dipendenti e ai loro stipendi. Vengono anche gestite le server farm con i server che ne fanno parte, i tecnici che li mantengono e i suoi \textbf{amministratori}\textsuperscript{\tiny 7}. Si vuole tener traccia delle prestazioni dei dipendenti, dei guasti e degli eventuali acquisti da fornitori esterni. Si vuole inoltre informatizzare il processo di assistenza ai \textbf{clienti}\textsuperscript{\tiny 8}, salvando il motivo dei reclami e/o domande e l'eventuale risoluzione da parte dell'\textbf{assistente}\textsuperscript{\tiny 9}.
+	\end{minipage}
+}
+\\*
+Come evidenziato nella tabella seguente, sono stati identificati casi di omonimia; ad esempio, viene usato il termine amministratore per descrivere due ruoli differenti all'interno dell'azienda. Sono inolte stati evidenziati casi di imprecisione nell'uso di terminologia specifica del settore e imprecisioni a livello funzionale; per esempio i termini \textit{cliente} o \textit{utente} vengono usati sia per i visitatori del sito, sia per utenti iscritti indifferentemente dal tipo di account posseduto.\\
+Di seguito vengono riportate le correzioni da adottare
+\\
+\small
+\begin{tabular} {| c | p{3cm} | p{3cm} || p{5cm} |}
+\hline
+nota & espressione & sostituzione & commenti \\ \hline
+1 & \textit{potenziali clienti} & \textit{i visitatori che sono interessati al servizio} & poco chiaro \\ \hline
+2 & \textit{utenti} & \textit{utenti aventi un account valido} & solo chi ha un account validato pu\`o svolgere operazioni di acquisto \\ \hline
+3 & \textit{durata del servizio} & \textit{durata di persistenza dello stesso} & Alla creazione di un record viene specificato dall'utente per quanto tempo il record deve restare attivo \\ \hline
+4 & \textit{clienti soddisfatti del servizio} & \textit{gli utenti che lo desiderano} & tutti gli utenti in possesso di un account valido possono decidere di cambiare tipo di account \\ \hline
+5 & \textit{clienti} & \textit{gli utenti in possesso di un account non Basic} & solo alcuni tipi di account hanno accesso a strumenti pi\`u avanzati come le statistiche \\ \hline
+6 & \textit{traffico generato} & \textit{numero di richieste dns al server riguardanti i suoi record} & imprecisione in ambito specifico \\ \hline
+7 & \textit{amministratori} & \textit{amministratori delle server farm} & caso di omonimia con gli amministratori del servizio. Coprono ruoli diversi. \\ \hline
+8 & \textit{clienti} & vedi nota 5 & solo alcuni tipi di account posso richiedere assistenza presso un centro assistenza. \\ \hline
+9 & \textit{assistente} & \textit{referente del centro assistenza} & poco chiaro \\ \hline
+\end{tabular}
+
+\newpage
+\subsection{Definizione delle specifiche}
+Ora \`e possibile riscrivere l'analisi dei requisiti in modo meno ambiguo e pi\`u fiunzionale all'attività di progettazione.
+\\*
+\framebox[12,5cm] {
+	\begin{minipage}{12,25cm}
+	\small
+	\`e richiesto un sistema informatico per la gestione di un servizio di dynamic dns. I visitatori che sono interessati al servizio devono potersi iscrivere gratuitamente tramite web. Gli utenti aventi un account valido possono comprare dei nuovi record scegliendo hostname e durata di persistenza dello stesso. Il pagamento \`e effettuato attraverso una moneta virtuale ricaricabile con carta di cedito. Gli utenti che lo desiderano hanno la possibilità di passare ad un account di livello superiore. Ogni tipo di account offre dei benefici in cambio di un abbonamento mensile o annuale. Viene data agli utenti in possesso di un account non Basic la possibilità di esaminare alcune statistiche riguardanti gli ultimi acqusti e il numero di richieste dns al server riguardanti i suoi record. Gli amministratori del servizio posso decidere di mettere a disposizione degli utenti delle promozioni temporanee per questioni di marketing e visibilità. Viene inoltre richiesto di gestire la parte interna all'azienda. Devono essere salvati i dati relativi ai dipendenti e ai loro stipendi. Vengono anche gestite le server farm con i server che ne fanno parte, i tecnici che li mantengono e gli amministratori delle server farm. Si vuole tener traccia delle prestazioni dei dipendenti, dei guasti e degli eventuali acquisti da fornitori esterni. Si vuole inoltre informatizzare il processo di assistenza agli utenti in possesso di un account non Basic, salvando il motivo dei reclami e/o domande e l'eventuale risoluzione da parte del referente del centro assistenza.
+	\end{minipage}
+}
+
+\newpage
+\subsection{Estrazione dei concetti principali}
+L'estrazione dei concetti principali dal testo di analisi delle specifiche ci permette di costruire uno schema scheletro da cui partire con un processo di progettazione a fasi successive.
+\\*
+\framebox[12,5cm] {
+	\begin{minipage}{12,25cm}
+	\small
+	\`e richiesto un sistema informatico per la gestione di un servizio di dynamic dns. I \underline{\textbf{visitatori}} che sono interessati al servizio devono potersi iscrivere gratuitamente tramite web. Gli utenti aventi un \underline{\textbf{account}} valido possono comprare dei nuovi \underline{\textbf{record}} scegliendo hostname e durata di persistenza dello stesso. Il metodo di \underline{\textbf{pagamento}} \`e effettuato attraverso una \underline{\textbf{moneta virtuale}} ricaricabile con carta di cedito. Gli utenti che lo desiderano hanno la possibilità di passare ad un \underline{\textbf{account}} di livello superiore. Ogni tipo di account offre dei benefici in cambio di un abbonamento mensile o annuale. Viene data agli utenti in possesso di un account non Basic la possibilità di esaminare alcune \underline{\textbf{statistiche}} riguardanti gli ultimi acqusti e il numero di richieste dns al server riguardanti i suoi record. Gli \underline{\textbf{amministratori}} del servizio posso decidere di mettere a disposizione degli utenti delle \underline{\textbf{promozioni}} temporanee per questioni di marketing e visibilità. Viene inoltre richiesto di gestire la parte interna all'azienda. Devono essere salvati i dati relativi ai \underline{\textbf{dipendenti}} e ai loro \underline{\textbf{stipendi}}. Vengono anche gestite le \underline{\textbf{server farm}} con i \underline{\textbf{server}} che ne fanno parte, i \underline{\textbf{tecnici}} che li mantengono e gli \underline{\textbf{amministratori}} delle server farm. Si vuole tener traccia delle \underline{\textbf{prestazioni}} dei \underline{\textbf{dipendenti}}, dei guasti e degli eventuali acquisti da \underline{\textbf{fornitori}} esterni. Si vuole inoltre informatizzare il processo di \underline{\textbf{assistenza}} agli utenti in possesso di un account non Basic, salvando il motivo dei \underline{\textbf{reclami}} e/o domande e l'eventuale risoluzione da parte del referente del \underline{\textbf{centro assistenza}}.
+	\end{minipage}
+}
+
+\newpage
+\section{Progettazione concettuale}
+Di seguito progetteremo uno schema entity relationship che modelli il sistema descritto in precedenza. Si inizia estraendo i concetti più importanti creando un primo schema scheletro; dopodichè svilupperemo i singoli oggetti dello schema per creare infine uno schema e/r completo e coerente con le specifiche.
+
+\subsection{Schema scheletro}
+Questo è lo schema scheletro risultante da una prima approssimazione del nostro modello. Abbiamo messo in evidenza 4 entit\`a: Cliente, Record, Server e Dipendente.
+
+\usetikzlibrary{positioning}
+\usetikzlibrary{shadows}
+
+\tikzstyle{every entity} = [top color=white, bottom color=blue!30, draw=blue!50!black!100, drop shadow]
+\tikzstyle{every weak entity} = [drop shadow={shadow xshift=.7ex, shadow yshift=-.7ex}]
+\tikzstyle{every attribute} = [top color=white, bottom color=yellow!20, draw=yellow, node distance=1cm, drop shadow]
+\tikzstyle{every relationship} = [top color=white, bottom color=red!20, draw=red!50!black!100, drop shadow]
+\tikzstyle{every isa} = [top color=white, bottom color=green!20, draw=green!50!black!100, drop shadow]
+
+\begin{figure}[!h]
+\centering
+\scalebox{.80}{
+\begin{tikzpicture}[node distance=1.5cm, every edge/.style={link}]
+	\node[entity] (cliente) {Cliente};
+	\node[relationship] (acquista) [right=of cliente] {Acquista} edge (cliente);
+	\node[entity] (record) [right=of acquista] {Record DNS} edge (acquista);
+	\node[relationship] (salvato) [right=of record] {Salvato in} edge (record);
+	\node[entity] (server) [below=of salvato] {Server} edge (salvato);
+	\node[relationship] (lavora) [left=of server] {Lavora presso} edge (server);
+	\node[entity] (dipendente) [left=of lavora] {Dipendente} edge (lavora);
+\end{tikzpicture}
+}
+\end{figure}
+
+\subsection{Sviluppo dello schema scheletro}
+Di seguito verranno sviluppate le entità e associazioni dello schema scheletro ricavando delle viste parziali dello schema. Dall'unione delle viste parziali ricaveremo lo schema concettuale del modello.
+
+\newpage
+\subsection{Sviluppo dell'entit\`a Cliente}
+Un cliente che vuole usufruire dei servizi del vendor deve prima creare un account, e d'ora si ragioner\`a in termini di \"account\" e non di \"cliente\".
+Un account oltre ai suoi dati personali, quali nome, cognome, password etc., ha associato ad esso un portafoglio di crediti virtuali da spendere nei vari servizi. Questi crediti vengono acquistati tramite pagamenti con carte di credito; viene quindi creata l'entità Movimento per storicizzarli.
+Gli utenti comprano i record dns sottomettendo un ordine di acquisto
+\\*
+\begin{figure}[!h]
+\centering
+\scalebox{.80}{
+\begin{tikzpicture}[node distance=1.2cm, every edge/.style={link}]
+	\node[entity] (utente) {Utente};
+	\node[relationship] (sott) [right=of utente] {Sottomissione} edge (utente);
+	\node[entity] (ordine) [right=of sott] {Ordine} edge (sott);
+	\node[relationship] (per) [below=of ordine] {Per} edge (ordine);
+	\node[entity] (record) [below=of per] {Record DNS} edge (per);
+	\node[relationship] (comp) [below right=of utente] {Composizione} edge (utente);
+	\node[relationship] (rel) [below=of utente] {Relativo a} edge (utente);
+	\node[entity] (mov) [below=of rel] {Movimento} edge (rel);
+	\draw[link] -| (comp) edge (record);
+\end{tikzpicture}
+}
+\end{figure}
+\\*
+Durante l'analisi funzionale del modello cercheremo di capire se il ciclo tra Utente, Ordine e Record verrà lasciato o meno.
+
+\newpage
+\subsection{Sviluppo dell'entit\`a Server}
+Come evidenziato nell'analisi dei requisiti, la struttura interna dell'azienda è molto più complicata. Essa è infatti suddivisa per regioni geografiche. Inoltre, si parla di server farm, e non di singoli server. 
+\newline
+Si vuole inoltre tener traccia delle spese riguardanti ognuno degli stabilimenti
+\\*
+\begin{figure}[!h]
+\centering
+\scalebox{.85}{
+\begin{tikzpicture}[node distance=0.5cm, every edge/.style={link}]
+	\node[entity] (reg) {Regione Geografica};
+	\node[relationship] (app) [below=of reg] {Appartenenza} edge (reg);
+	\node[entity] (stab) [below=of app] {Stabilimento} edge (app);
+	\node[relationship] (di) [below=of stab] {Di} edge (stab);
+	\node[entity] (serv) [below=of di] {Server DNS} edge (di);
+	\node[relationship] (rig) [left=of stab] {Riguardante} edge (stab);
+	\node[entity] (acq) [left=of rig] {Acquisto} edge (rig);
+	\node[relationship] (da) [below=of acq] {Da} edge (acq);
+	\node[entity] (for) [below=of da] {Fornitore} edge (da);
+\end{tikzpicture}
+}
+\end{figure}
+\\*
+
+\newpage
+\subsection{Sviluppo dell'entit\`a Dipendente}
+L'ultima parte da sviluppare è quella dei dipendenti. L'analisi dei requisiti ha evidenziato il bisogno di 3 nuove entit\`a che otterremo tramite un processo di specializzazione della classe Dipendente.
+Le 3 nuove entità che vengono aggiunte sono gli amministratori degli stabilimenti, i responsabili dell'assistenza ai clienti e i tecnici che si occupano di garantire il servizio.
+
+\begin{figure}[!h]
+\centering
+\scalebox{.85}{
+\begin{tikzpicture}[node distance=0.85cm, every edge/.style={link}]
+	\node[entity] (dip) {Dipendente};
+	\node[isa] (isa) [above=1.5cm of dip] {Is a} edge (dip);
+	\node[entity] (resp) [right=of isa] {Resp. Clienti} edge (isa);
+	\node[entity] (amm) [above=of isa] {Amministratore} edge (isa);
+	\node[entity] (tec) [left=of isa] {Tecnico} edge (isa);
+	\node[relationship] (fa) [above=of tec] {Fa} edge (tec);
+	\node[entity] (man) [above=of fa] {Manutenzione} edge (fa);
+	\node[relationship] (asc) [above=of resp] {Ascolta} edge (resp);
+	\node[entity] (rec) [above=of asc] {Reclamo} edge (asc);
+\end{tikzpicture}
+}
+\end{figure}
+
+
+Nel prossimo paragrafo verranno unite le nuove viste che abbiamo costruito per avere uno schema totale del modello. Questo schema verrà poi migliorato attraverso il processo di progettazione logica.
+
+\newpage
+\subsection{Schema concettuale}
+\begin{figure}[!h]
+\centering
+\scalebox{.50}{
+\begin{tikzpicture}[node distance=0.85cm, every edge/.style={link}]
+	%utente
+	\node[entity] (utente) {Utente};
+	\node[relationship] (sott) [right=of utente] {Sottomissione} edge (utente);
+	\node[entity] (ordine) [right=of sott] {Ordine} edge (sott);
+	\node[relationship] (per) [below=of ordine] {Per} edge (ordine);
+	\node[entity] (record) [below=of per] {Record DNS} edge (per);
+	\node[relationship] (comp) [below right=of utente] {Composizione} edge (utente);
+	\node[relationship] (rel) [above=of utente] {Relativo a} edge (utente);
+	\node[entity] (mov) [above=of rel] {Movimento} edge (rel);
+	\draw[link] -| (comp) edge (record);
+	%server
+	\node[relationship] (app) [left=of utente] {Appartenenza} edge (utente);
+	\node[entity] (reg) [left=of app] {Regione Geografica} edge(app);
+	\node[relationship] (ser) [left=of reg] {Serve} edge (reg);
+	\node[entity] (stab) [below=2.0cm of ser] {Stabilimento} edge (ser);
+	\node[relationship] (di) [below=of stab] {Di} edge (stab);
+	\node[entity] (serv) [below=of di] {Server DNS} edge (di);
+	\node[relationship] (rig) [left=of stab] {Riguardante} edge (stab);
+	\node[entity] (acq) [left=of rig] {Acquisto} edge (rig);
+	\node[relationship] (da) [below=of acq] {Da} edge (acq);
+	\node[entity] (for) [below=of da] {Fornitore} edge (da);
+	%dipendente
+	\node[relationship] (spo) [below=of utente] {Sporge} edge(utente);
+	\node[entity] (rec) [below=of spo] {Reclamo} edge (spo);
+	
+	\node[relationship] (asc) [below=of rec] {Ascolta} edge (rec);
+	\node[entity] (resp) [below=of asc] {Resp. Clienti} edge (asc);
+	\node[relationship] (amm2) [right=3.50cm of stab] {Amministra} edge (stab);
+	\node[entity] (amm) [below=of amm2] {Amministratore} edge (amm2);
+	\node[relationship] (su) [below=of serv] {Su} edge (serv);
+	\node[entity] (man) [below=of su] {Manutenzione} edge (su);
+	\node[relationship] (fa) [right=0.30cm of man] {Fa} edge (man);
+	\node[entity] (tec) [right=0.30cm of fa] {Tecnico} edge (fa);
+	
+
+	\node[isa] (isa) [right=1.0cm of tec] {Is a} edge(tec);
+	\node[entity] (dip) [below=of isa] {Dipendente} edge(isa);
+
+	\draw[link] -| (isa) edge (amm);
+	\draw[link] -| (isa) edge (resp);
+\end{tikzpicture}
+}
+\end{figure}
+
+\newpage
+\section{Specifiche funzionali}
+\subsection{Funzionalit\`a richieste}
+In questa sezione studieremo alcune delle funzionalità base che il servizio dovr\`a mettere a disposizione; questo ci aiuter\`a ad apportare delle migliorie allo schema in seguito a studi statistici sugli accessi al database. Verranno dunque evidenziate le entit\`a interessate e verrà fatta una stima approssimativa del volume di dati prevista per ogni entit\`a e associazione.
+\newline
+Le funzionalit\`a che prenderemo in considerazione sono:
+\begin{itemize}
+\item Sottomettere un ordine
+\item Acquisto di una fornitura
+\item Dispatch di un reclamo
+\item Ricarica credito
+\end{itemize}
+
+\subsection{Sottomettere un ordine}
+L'utente deve accedere al servizio e deve scegliere nome, durata e dettagli del nome dns che vuole acquistare; il programma si occupa di controllare la disponibilit\`a del nome nel database, e la disponibilit\`a di credito; in caso negativo lo comunica all'utente. Successivamente il servizio interviene nel database aggiornando la lista degli ordini, e il saldo di crediti nell'entit\`a Utente.
+\newline
+\newline
+Entit\`a coinvolte: Utente, Record DNS, Ordine.
+\newline
+Associazioni coinvolte: Composizione, Sottomissione.
+
+\subsection{Acquisto di una fornitura}
+Il tecnico o amministratore che vuole acquistare una fornitura deve immettere il modulo di acquisto nell'apposito spazio salvandolo quindi nel database. L'utente che si interfaccier\`a al servizio tramite una pagina web dovr\`a scegliere il fornitore da un men\`u a tendina (se non presente, tale fornitore dovr\`a essere aggiunto); in seguito dovr\`a immettere una descrizione del prodotto comprensiva di quantità e prezzo.
+\newline
+\newline
+Entit\`a coinvolte: Fornitore, Acquisto, Stabilimento.
+\newline
+Associazioni coinvolte: Riguardante, Da.
+
+\subsection{Dispatch di un reclamo}
+Il processo di dispatch di un reclamo si divide in due parti: per prima cosa viene consegnato il primo reclamo in coda all'operatore; successivamente l'operatore dovrà aggiornare il sistema specificando che il reclamo è stato risolto con successo
+\newline
+\newline
+Entit\`a coinvolte: Responsabile clienti.
+\newline
+Associazioni coinvolte: Ascolta.
+
+\subsection{Ricarica credito}
+Il cliente accede al servizio web e immette i dati della sua carta di credito per ricaricare il suo credito virtuale. A transazione fatta il servizio si occupa di aggiornare la lista dei movimenti e il credito residuo dell'utente. Vengono dunque controllati i pagamenti arretati e vengono scalati subito i debiti.
+\newline
+\newline
+Entit\`a coinvolte: Utente, Movimento.
+\newline
+Associazioni coinvolte: Relativo a.
+
+\section{Progettazione Logica}
+\subsection{tabella dei volumi}
+Di seguito viene presentata la tabella con le previsioni del volume dei dati.
+\newline
+\small
+\begin{tabular} {| l | c | c |}
+\hline
+Nome & Tipo & Volume di dati \\ \hline
+Movimento & E & 700000 \\ \hline
+Relativo a & R & 700000 \\ \hline
+Utente & E & 500000 \\ \hline
+Sottomissione & R & 600000 \\ \hline
+Ordine & E & 600000 \\ \hline
+Per & R & 600000 \\ \hline
+Record DNS & E & 800000 \\ \hline
+Composizione & R & 800000 \\ \hline
+Sporge & R & 5000 \\ \hline
+Reclamo & E & 5000 \\ \hline
+Ascolta & R & 5000 \\ \hline
+Resp. clienti & E & 10 \\ \hline
+Appartenenza & R & 500000 \\ \hline
+Regione geografica & E & 10 \\ \hline
+Serve & R & 15 \\ \hline
+Stabilimento & E & 15 \\ \hline
+Riguardante & R & 7500 \\ \hline
+Acquisto & E & 7500 \\ \hline
+Da & R & 7500 \\ \hline
+Fornitore & E & 50 \\ \hline
+Di & R & 150 \\ \hline
+Server DNS & E & 150 \\ \hline
+Su & R & 1500 \\ \hline
+Manutenzione & E & 1500 \\ \hline
+Fa & R & 1500 \\ \hline
+Tecnico & E & 100 \\ \hline
+Amministra & R & 15 \\ \hline
+Amministratore & E & 15 \\ \hline
+Dipendente & E & 125 \\ \hline
+\end{tabular}
+\newpage
+
+\subsection{Schema di navigazione: Sottomissione ordine}
+\begin{figure}[!h]
+\centering
+\scalebox{.40}{
+\begin{tikzpicture}[node distance=0.85cm, every edge/.style={link}]
+	%utente
+	\node[weak entity] (utente) {Utente};
+	\node[ident relationship] (sott) [right=of utente] {Sottomissione} edge [total] (utente);
+	\node[weak entity] (ordine) [right=of sott] {Ordine} edge [total] (sott);
+	\node[relationship] (per) [below=of ordine] {Per} edge (ordine);
+	\node[weak entity] (record) [below=of per] {Record DNS} edge (per);
+	\node[ident relationship] (comp) [below right=of utente] {Composizione} edge [total] (utente);
+	\node[relationship] (rel) [above=of utente] {Relativo a} edge (utente);
+	\node[entity] (mov) [above=of rel] {Movimento} edge (rel);
+	\draw[link] -| (comp) edge [total] (record);
+	%server
+	\node[relationship] (app) [left=of utente] {Appartenenza} edge (utente);
+	\node[entity] (reg) [left=of app] {Regione Geografica} edge(app);
+	\node[relationship] (ser) [left=of reg] {Serve} edge (reg);
+	\node[entity] (stab) [below=2.0cm of ser] {Stabilimento} edge (ser);
+	\node[relationship] (di) [below=of stab] {Di} edge (stab);
+	\node[entity] (serv) [below=of di] {Server DNS} edge (di);
+	\node[relationship] (rig) [left=of stab] {Riguardante} edge (stab);
+	\node[entity] (acq) [left=of rig] {Acquisto} edge (rig);
+	\node[relationship] (da) [below=of acq] {Da} edge (acq);
+	\node[entity] (for) [below=of da] {Fornitore} edge (da);
+	%dipendente
+	\node[relationship] (spo) [below=of utente] {Sporge} edge(utente);
+	\node[entity] (rec) [below=of spo] {Reclamo} edge (spo);
+	
+	\node[relationship] (asc) [below=of rec] {Ascolta} edge (rec);
+	\node[entity] (resp) [below=of asc] {Resp. Clienti} edge (asc);
+	\node[relationship] (amm2) [right=3.50cm of stab] {Amministra} edge (stab);
+	\node[entity] (amm) [below=of amm2] {Amministratore} edge (amm2);
+	\node[relationship] (su) [below=of serv] {Su} edge (serv);
+	\node[entity] (man) [below=of su] {Manutenzione} edge (su);
+	\node[relationship] (fa) [right=0.30cm of man] {Fa} edge (man);
+	\node[entity] (tec) [right=0.30cm of fa] {Tecnico} edge (fa);
+	
+
+	\node[isa] (isa) [right=1.0cm of tec] {Is a} edge(tec);
+	\node[entity] (dip) [below=of isa] {Dipendente} edge(isa);
+
+	\draw[link] -| (isa) edge (amm);
+	\draw[link] -| (isa) edge (resp);
+\end{tikzpicture}
+}
+\end{figure}
+
+\end{document}

@@ -1,0 +1,32 @@
+Content-type:text/html
+
+<html>
+	<head>
+		<title>DyDns {% block title_description %}{% endblock %}</title>
+		<link rel="stylesheet" type="text/css" href="style/style.css">
+	</head>
+	<body>
+		<header>
+			<h1>DyDns</h1>
+		</header>
+		<div id="main">
+			<nav id="nav">
+				<a href="index.py">Home</a>
+				<a href="reg.py">Registration</a>
+				<a href="login.py">Login</a>
+			</nav>
+			{% block main %}
+			{% endblock %}
+			<div id="progetto">
+				Python - Jinja2 - JavaScript - MySQL
+				<a href="relazione.pdf">relazione PDF</a>
+				<a href="relazione.tex">relazione TEX</a>
+			</div>
+		</div>
+		<footer>
+			Progetto di Basi di Dati
+			Michele Proverbio
+			Alessandra La Rocca
+		</footer>
+	</body>
+</html>
