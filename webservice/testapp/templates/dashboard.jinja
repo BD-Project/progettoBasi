@@ -2,6 +2,17 @@
 {% block title_description %}Home Page{% endblock %}
 {% block main %}
 	<div>
-		Dashboard
+		Dashboard <br>
+		<a href="ordine.py">Fai un oridne</a>
+	</div>
+	<div>
+		Il tuo credito residuo: {{credito}}
+	</div>
+	<div>
+		I tuoi record
+
+		{% for record in records %}
+			{{record.id}} {{record.nome}} {{record.expiration}} <br>
+		{% endfor %}
 	</div>
 {% endblock %}

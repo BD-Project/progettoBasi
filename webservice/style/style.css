@@ -12,9 +12,13 @@ div#main {
 	padding: 4px;
 }
 
-nav {
+nav#nav {
 	height: 60px;
 	padding: 4px;
+}
+
+div#progetto a {
+	display: block;
 }
 
 div#progetto {
