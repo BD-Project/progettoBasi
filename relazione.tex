@@ -275,20 +275,20 @@ Entit\`a coinvolte: Utente, Record DNS, Ordine.
 Associazioni coinvolte: Composizione, Sottomissione.
 
 \subsection{Acquisto di una fornitura}
-Il tecnico o amministratore che vuole acquistare una fornitura deve immettere il modulo di acquisto nell'apposito spazio salvandolo quindi nel database. L'utente che si interfaccier\`a al servizio tramite una pagina web dovr\`a scegliere il fornitore da un men\`u a tendina (se non presente, tale fornitore dovr\`a essere aggiunto); in seguito dovr\`a immettere una descrizione del prodotto comprensiva di quantità e prezzo.
+Il tecnico che vuole acquistare una fornitura deve immettere il modulo di acquisto nell'apposito spazio salvandolo quindi nel database. L'utente che si interfaccier\`a al servizio tramite una pagina web dovr\`a scegliere il fornitore da un men\`u a tendina (se non presente, tale fornitore dovr\`a essere aggiunto); in seguito dovr\`a immettere una descrizione del prodotto comprensiva di quantità e prezzo. Nell'ordine viene anche salvato l'identificativo di chi ha fatto l'ordine.
 \newline
 \newline
-Entit\`a coinvolte: Fornitore, Acquisto, Stabilimento.
+Entit\`a coinvolte: Fornitore, Acquisto, Stabilimento, Tecnico.
 \newline
 Associazioni coinvolte: Riguardante, Da.
 
 \subsection{Dispatch di un reclamo}
-Il processo di dispatch di un reclamo si divide in due parti: per prima cosa viene consegnato il primo reclamo in coda all'operatore; successivamente l'operatore dovrà aggiornare il sistema specificando che il reclamo è stato risolto con successo
+Il processo di dispatch di un reclamo si divide in due parti: per prima cosa viene consegnato il primo reclamo in coda all'operatore; successivamente l'operatore dovrà aggiornare il sistema specificando che il reclamo è stato risolto con successo. Il sistema si occuperà di informare il cliente interessato.
 \newline
 \newline
-Entit\`a coinvolte: Responsabile clienti.
+Entit\`a coinvolte: Responsabile clienti, Reclamo, Utente.
 \newline
-Associazioni coinvolte: Ascolta.
+Associazioni coinvolte: Ascolta, Sporge.
 
 \subsection{Ricarica credito}
 Il cliente accede al servizio web e immette i dati della sua carta di credito per ricaricare il suo credito virtuale. A transazione fatta il servizio si occupa di aggiornare la lista dei movimenti e il credito residuo dell'utente. Vengono dunque controllati i pagamenti arretati e vengono scalati subito i debiti.
@@ -353,6 +353,153 @@ Dipendente & E & 125 \\ \hline
 	\node[relationship] (rel) [above=of utente] {Relativo a} edge (utente);
 	\node[entity] (mov) [above=of rel] {Movimento} edge (rel);
 	\draw[link] -| (comp) edge [total] (record);
+	%server
+	\node[relationship] (app) [left=of utente] {Appartenenza} edge (utente);
+	\node[entity] (reg) [left=of app] {Regione Geografica} edge(app);
+	\node[relationship] (ser) [left=of reg] {Serve} edge (reg);
+	\node[entity] (stab) [below=2.0cm of ser] {Stabilimento} edge (ser);
+	\node[relationship] (di) [below=of stab] {Di} edge (stab);
+	\node[entity] (serv) [below=of di] {Server DNS} edge (di);
+	\node[relationship] (rig) [left=of stab] {Riguardante} edge (stab);
+	\node[entity] (acq) [left=of rig] {Acquisto} edge (rig);
+	\node[relationship] (da) [below=of acq] {Da} edge (acq);
+	\node[entity] (for) [below=of da] {Fornitore} edge (da);
+	%dipendente
+	\node[relationship] (spo) [below=of utente] {Sporge} edge(utente);
+	\node[entity] (rec) [below=of spo] {Reclamo} edge (spo);
+	
+	\node[relationship] (asc) [below=of rec] {Ascolta} edge (rec);
+	\node[entity] (resp) [below=of asc] {Resp. Clienti} edge (asc);
+	\node[relationship] (amm2) [right=3.50cm of stab] {Amministra} edge (stab);
+	\node[entity] (amm) [below=of amm2] {Amministratore} edge (amm2);
+	\node[relationship] (su) [below=of serv] {Su} edge (serv);
+	\node[entity] (man) [below=of su] {Manutenzione} edge (su);
+	\node[relationship] (fa) [right=0.30cm of man] {Fa} edge (man);
+	\node[entity] (tec) [right=0.30cm of fa] {Tecnico} edge (fa);
+	
+
+	\node[isa] (isa) [right=1.0cm of tec] {Is a} edge(tec);
+	\node[entity] (dip) [below=of isa] {Dipendente} edge(isa);
+
+	\draw[link] -| (isa) edge (amm);
+	\draw[link] -| (isa) edge (resp);
+\end{tikzpicture}
+}
+\end{figure}
+
+\subsection{Schema di navigazione: Acquisto fornitura}
+\begin{figure}[!h]
+\centering
+\scalebox{.40}{
+\begin{tikzpicture}[node distance=0.85cm, every edge/.style={link}]
+	%utente
+	\node[entity] (utente) {Utente};
+	\node[relationship] (sott) [right=of utente] {Sottomissione} edge (utente);
+	\node[entity] (ordine) [right=of sott] {Ordine} edge (sott);
+	\node[relationship] (per) [below=of ordine] {Per} edge (ordine);
+	\node[entity] (record) [below=of per] {Record DNS} edge (per);
+	\node[relationship] (comp) [below right=of utente] {Composizione} edge (utente);
+	\node[relationship] (rel) [above=of utente] {Relativo a} edge (utente);
+	\node[entity] (mov) [above=of rel] {Movimento} edge (rel);
+	\draw[link] -| (comp) edge (record);
+	%server
+	\node[relationship] (app) [left=of utente] {Appartenenza} edge (utente);
+	\node[entity] (reg) [left=of app] {Regione Geografica} edge(app);
+	\node[relationship] (ser) [left=of reg] {Serve} edge (reg);
+	\node[weak entity] (stab) [below=2.0cm of ser] {Stabilimento} edge (ser);
+	\node[ident relationship] (di) [below=of stab] {Di} edge [total] (stab);
+	\node[weak entity] (serv) [below=of di] {Server DNS} edge [total] (di);
+	\node[ident relationship] (rig) [left=of stab] {Riguardante} edge [total] (stab);
+	\node[weak entity] (acq) [left=of rig] {Acquisto} edge [total] (rig);
+	\node[ident relationship] (da) [below=of acq] {Da} edge [total] (acq);
+	\node[weak entity] (for) [below=of da] {Fornitore} edge [total] (da);
+	%dipendente
+	\node[relationship] (spo) [below=of utente] {Sporge} edge(utente);
+	\node[entity] (rec) [below=of spo] {Reclamo} edge (spo);
+	
+	\node[relationship] (asc) [below=of rec] {Ascolta} edge (rec);
+	\node[entity] (resp) [below=of asc] {Resp. Clienti} edge (asc);
+	\node[relationship] (amm2) [right=3.50cm of stab] {Amministra} edge (stab);
+	\node[entity] (amm) [below=of amm2] {Amministratore} edge (amm2);
+	\node[ident relationship] (su) [below=of serv] {Su} edge [total] (serv);
+	\node[weak entity] (man) [below=of su] {Manutenzione} edge [total] (su);
+	\node[ident relationship] (fa) [right=0.30cm of man] {Fa} edge [total] (man);
+	\node[weak entity] (tec) [right=0.30cm of fa] {Tecnico} edge [total] (fa);
+	
+
+	\node[isa] (isa) [right=1.0cm of tec] {Is a} edge(tec);
+	\node[entity] (dip) [below=of isa] {Dipendente} edge(isa);
+
+	\draw[link] -| (isa) edge (amm);
+	\draw[link] -| (isa) edge (resp);
+\end{tikzpicture}
+}
+\end{figure}
+
+\subsection{Schema di navigazione: Dispatch reclamo}
+\begin{figure}[!h]
+\centering
+\scalebox{.40}{
+\begin{tikzpicture}[node distance=0.85cm, every edge/.style={link}]
+	%utente
+	\node[weak entity] (utente) {Utente};
+	\node[relationship] (sott) [right=of utente] {Sottomissione} edge (utente);
+	\node[entity] (ordine) [right=of sott] {Ordine} edge (sott);
+	\node[relationship] (per) [below=of ordine] {Per} edge (ordine);
+	\node[entity] (record) [below=of per] {Record DNS} edge (per);
+	\node[relationship] (comp) [below right=of utente] {Composizione} edge (utente);
+	\node[relationship] (rel) [above=of utente] {Relativo a} edge (utente);
+	\node[entity] (mov) [above=of rel] {Movimento} edge (rel);
+	\draw[link] -| (comp) edge (record);
+	%server
+	\node[relationship] (app) [left=of utente] {Appartenenza} edge (utente);
+	\node[entity] (reg) [left=of app] {Regione Geografica} edge(app);
+	\node[relationship] (ser) [left=of reg] {Serve} edge (reg);
+	\node[entity] (stab) [below=2.0cm of ser] {Stabilimento} edge (ser);
+	\node[relationship] (di) [below=of stab] {Di} edge (stab);
+	\node[entity] (serv) [below=of di] {Server DNS} edge (di);
+	\node[relationship] (rig) [left=of stab] {Riguardante} edge (stab);
+	\node[entity] (acq) [left=of rig] {Acquisto} edge (rig);
+	\node[relationship] (da) [below=of acq] {Da} edge (acq);
+	\node[entity] (for) [below=of da] {Fornitore} edge (da);
+	%dipendente
+	\node[ident relationship] (spo) [below=of utente] {Sporge} [total] edge(utente);
+	\node[weak entity] (rec) [below=of spo] {Reclamo} edge [total] (spo);
+	
+	\node[ident relationship] (asc) [below=of rec] {Ascolta} edge [total] (rec);
+	\node[weak entity] (resp) [below=of asc] {Resp. Clienti} edge [total] (asc);
+	\node[relationship] (amm2) [right=3.50cm of stab] {Amministra} edge (stab);
+	\node[entity] (amm) [below=of amm2] {Amministratore} edge (amm2);
+	\node[relationship] (su) [below=of serv] {Su} edge (serv);
+	\node[entity] (man) [below=of su] {Manutenzione} edge (su);
+	\node[relationship] (fa) [right=0.30cm of man] {Fa} edge (man);
+	\node[entity] (tec) [right=0.30cm of fa] {Tecnico} edge (fa);
+	
+
+	\node[isa] (isa) [right=1.0cm of tec] {Is a} edge(tec);
+	\node[entity] (dip) [below=of isa] {Dipendente} edge(isa);
+
+	\draw[link] -| (isa) edge (amm);
+	\draw[link] -| (isa) edge (resp);
+\end{tikzpicture}
+}
+\end{figure}
+
+\subsection{Schema di navigazione: Ricarica credito}
+\begin{figure}[!h]
+\centering
+\scalebox{.40}{
+\begin{tikzpicture}[node distance=0.85cm, every edge/.style={link}]
+	%utente
+	\node[weak entity] (utente) {Utente};
+	\node[relationship] (sott) [right=of utente] {Sottomissione} edge (utente);
+	\node[entity] (ordine) [right=of sott] {Ordine} edge (sott);
+	\node[relationship] (per) [below=of ordine] {Per} edge (ordine);
+	\node[entity] (record) [below=of per] {Record DNS} edge (per);
+	\node[relationship] (comp) [below right=of utente] {Composizione} edge (utente);
+	\node[ident relationship] (rel) [above=of utente] {Relativo a} edge [total] (utente);
+	\node[weak entity] (mov) [above=of rel] {Movimento} edge [total] (rel);
+	\draw[link] -| (comp) edge (record);
 	%server
 	\node[relationship] (app) [left=of utente] {Appartenenza} edge (utente);
 	\node[entity] (reg) [left=of app] {Regione Geografica} edge(app);
